@@ -1,4 +1,5 @@
 name: Actualizar Empleos
+
 on:
   schedule:
     - cron: '0 8 * * *'
@@ -7,42 +8,25 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
+      
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - run: pip install requests beautifulsoup4
-      - run: python scraper.py
-      - run: |
+      
+      - name: Instalar dependencias
+        run: pip install requests beautifulsoup4
+      
+      - name: Ejecutar scraper
+        run: python scraper.py
+      
+      - name: Commit y push
+        run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add jobs.json
-          git commit -m "Actualizar empleos" || exit 0
+          git diff --quiet && git diff --staged --quiet || git commit -m "Actualizar empleos"
           git push
-```
-
-5. Baja hasta el final
-6. Selecciona: **"Commit directly to the main branch"**
-7. Haz clic en **"Commit new file"**
-
----
-
-## 📍 **SIGUIENTE: Activar GitHub Pages**
-
-1. **Haz clic en "Settings"** (pestaña superior de tu repositorio)
-
-2. **En el menú lateral izquierdo**, busca y haz clic en **"Pages"**
-
-3. **Configurar:**
-   - **Source**: Selecciona `Deploy from a branch`
-   - **Branch**: Selecciona `main`
-   - **Folder**: Selecciona `/ (root)`
-
-4. Haz clic en **"Save"**
-
-5. **Espera 1-2 minutos** y recarga la página
-
-6. Verás un mensaje verde con tu URL:
-```
-   Your site is live at https://encinapablo59-bit.github.io/nombre-de-tu-repo
