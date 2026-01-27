@@ -119,34 +119,86 @@ def scrape_bumeran():
         print(f"Error general en Bumeran: {e}")
     return jobs
 
+def scrape_linkedin():
+    jobs = []
+    print("Iniciando scrape de LinkedIn...")
+    try:
+        # URL de búsqueda pública de LinkedIn
+        url = 'https://www.linkedin.com/jobs/search?keywords=&location=Puerto%20Madryn%2C%20Chubut'
+        r = requests.get(url, headers=get_headers(), timeout=15)
+        
+        if r.status_code != 200:
+            print(f"Error en LinkedIn: Status {r.status_code}")
+            return []
+
+        soup = BeautifulSoup(r.content, 'html.parser')
+        cards = soup.find_all('div', class_='base-card')
+        print(f"Encontrados {len(cards)} anuncios en LinkedIn")
+        
+        for card in cards:
+            try:
+                title_elem = card.find('h3', class_='base-search-card__title')
+                company_elem = card.find('h4', class_='base-search-card__subtitle')
+                link_elem = card.find('a', class_='base-card__full-link')
+                
+                if not title_elem or not link_elem: continue
+                
+                title = title_elem.get_text(strip=True)
+                company = company_elem.get_text(strip=True) if company_elem else 'Empresa Confidencial'
+                link = link_elem['href'].split('?')[0] # Limpiar trackers
+                
+                jobs.append({
+                    'title': title,
+                    'company': company,
+                    'location': 'Puerto Madryn, Chubut',
+                    'description': f"Nueva oportunidad para {title} en {company} vía LinkedIn.",
+                    'date': datetime.now().strftime('%Y-%m-%d'),
+                    'url': link,
+                    'source': 'LinkedIn'
+                })
+            except Exception as e:
+                continue
+    except Exception as e:
+        print(f"Error general en LinkedIn: {e}")
+    return jobs
+
 def remove_duplicates(jobs):
-    seen = set()
+    seen_titles = set()
+    seen_urls = set()
     unique_jobs = []
+    
     for job in jobs:
-        # Identificador único basado en título y empresa (simplificado)
-        identifier = (job['title'].lower().strip(), job['company'].lower().strip())
-        if identifier not in seen:
-            seen.add(identifier)
+        # Limpiar URL para comparar (quitar protocolos y slash final)
+        clean_url = job['url'].replace('https://', '').replace('http://', '').rstrip('/')
+        # Identificador por título y empresa para detectar re-publicaciones
+        title_id = f"{job['title'].lower().strip()}|{job['company'].lower().strip()}"
+        
+        if clean_url not in seen_urls and title_id not in seen_titles:
+            seen_urls.add(clean_url)
+            seen_titles.add(title_id)
             unique_jobs.append(job)
+            
     return unique_jobs
 
 def main():
     print(f"--- Inicio de Scrape: {datetime.now()} ---")
     all_jobs = []
     
+    # Ejecutar scrapers
     all_jobs.extend(scrape_computrabajo())
     all_jobs.extend(scrape_bumeran())
+    all_jobs.extend(scrape_linkedin())
     
     initial_count = len(all_jobs)
     all_jobs = remove_duplicates(all_jobs)
-    print(f"Duplicados eliminados: {initial_count - len(all_jobs)}")
+    print(f"Total bruto: {initial_count} | Únicos: {len(all_jobs)}")
     
     all_jobs.sort(key=lambda x: x['date'], reverse=True)
     
     output = {
         'last_update': datetime.now().strftime('%d/%m/%Y %H:%M'),
         'total_jobs': len(all_jobs),
-        'jobs': all_jobs[:50] # Aumentamos el límite a 50
+        'jobs': all_jobs[:50]
     }
     
     with open('jobs.json', 'w', encoding='utf-8') as f:
@@ -156,4 +208,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
