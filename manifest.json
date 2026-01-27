@@ -1,0 +1,16 @@
+{
+  "name": "Madryn Empleos",
+  "short_name": "MadrynJobs",
+  "description": "Buscador de empleos en Puerto Madryn",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F46E5",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3850/3850285.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
